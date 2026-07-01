@@ -1,5 +1,5 @@
 import { useDocStore } from '../store/useDocStore';
-import type { DocElement, FieldType, TextAlign, FontRef } from '../schema/types';
+import type { DocElement, FieldType, TextAlign, FontRef, ImageElement } from '../schema/types';
 
 // ── Shared input primitives ───────────────────────────────────────────────────
 
@@ -209,6 +209,19 @@ function FieldProps({ el, commit }: { el: Extract<DocElement, { type: 'field' }>
   );
 }
 
+function ImageProps({ el, commit }: { el: ImageElement; commit: (p: Partial<ImageElement>) => void }) {
+  return (
+    <>
+      <BoundsSection el={el} commit={commit as (p: Partial<DocElement>) => void} />
+      <Divider />
+      <SectionTitle>Image Placeholder</SectionTitle>
+      <Row label="Label">
+        <input className="prop-text" value={el.label ?? ''} onChange={e => commit({ label: e.target.value })} />
+      </Row>
+    </>
+  );
+}
+
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export default function PropertiesPanel() {
@@ -228,12 +241,13 @@ export default function PropertiesPanel() {
 
   return (
     <aside className="props-panel">
-      <div className="props-type-badge">{el.type}</div>
+      <div className="props-type-badge">{el.type === 'image' ? 'image placeholder' : el.type}</div>
 
       {el.type === 'rect'  && <RectProps  el={el} commit={p => commit(p as Partial<DocElement>)} />}
       {el.type === 'text'  && <TextProps  el={el} commit={p => commit(p as Partial<DocElement>)} />}
       {el.type === 'line'  && <LineProps  el={el} commit={p => commit(p as Partial<DocElement>)} />}
       {el.type === 'field' && <FieldProps el={el} commit={p => commit(p as Partial<DocElement>)} />}
+      {el.type === 'image' && <ImageProps el={el} commit={p => commit(p as Partial<DocElement>)} />}
     </aside>
   );
 }

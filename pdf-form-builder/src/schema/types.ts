@@ -88,7 +88,18 @@ export interface FieldElement {
   widgetStyle: WidgetStyle;
 }
 
-export type DocElement = RectElement | TextElement | LineElement | FieldElement;
+export interface ImageElement {
+  id: string;
+  type: 'image';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label?: string;
+  objectFit?: 'contain' | 'cover';
+}
+
+export type DocElement = RectElement | TextElement | LineElement | FieldElement | ImageElement;
 
 export interface DocumentPage {
   id: string;

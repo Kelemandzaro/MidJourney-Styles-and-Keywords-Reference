@@ -1,20 +1,49 @@
 import { useState } from 'react';
+import Landing from './pages/Landing';
+import NewDocWizard from './pages/NewDocWizard';
 import EditorCanvas from './editor/EditorCanvas';
 import DomCanvas from './renderer/DomCanvas';
 import PropertiesPanel from './editor/PropertiesPanel';
-import AddElementPanel from './editor/AddElementPanel';
+import PalettePanel from './editor/PalettePanel';
 import { useDocStore } from './store/useDocStore';
 import { generatePDF } from './renderer/pdfEngine';
+import type { PageSize } from './schema/types';
 import './index.css';
 
-type Mode = 'edit' | 'preview';
+type AppPage = 'landing' | 'wizard' | 'editor';
+type EditMode = 'edit' | 'preview';
+
+const BLANK_SCHEMA = (pageSize: PageSize, title: string) => ({
+  id: `doc_${Date.now()}`,
+  version: 1,
+  meta: {
+    title,
+    pageSize,
+    units: 'pt' as const,
+    margins: { top: 36, right: 36, bottom: 36, left: 36 },
+  },
+  theme: {
+    colors: { primary: '#1B2A6B', accent: '#C9A227' },
+    fonts: {
+      heading: { family: 'Poppins' },
+      body: { family: 'Inter' },
+    },
+  },
+  pages: [{ id: 'page_1', elements: [] }],
+});
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('edit');
+  const [appPage, setAppPage] = useState<AppPage>('landing');
+  const [editMode, setEditMode] = useState<EditMode>('edit');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { schema, undo, redo, past, future, deleteSelected, selectedId } = useDocStore();
+  const { schema, undo, redo, past, future, deleteSelected, selectedId, setSchema } = useDocStore();
+
+  function handleCreate(pageSize: PageSize, title: string) {
+    setSchema(BLANK_SCHEMA(pageSize, title));
+    setAppPage('editor');
+  }
 
   const handleDownload = async () => {
     setGenerating(true);
@@ -25,7 +54,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'navion-fact-sheet.pdf';
+      a.download = `${schema.meta.title.replace(/\s+/g, '-').toLowerCase() || 'form'}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -35,29 +64,41 @@ export default function App() {
     }
   };
 
+  if (appPage === 'landing') {
+    return <Landing onStart={() => setAppPage('wizard')} />;
+  }
+
+  if (appPage === 'wizard') {
+    return (
+      <NewDocWizard
+        onCreate={handleCreate}
+        onBack={() => setAppPage('landing')}
+      />
+    );
+  }
+
+  // ── Editor ────────────────────────────────────────────────────────────────
   return (
     <div className="app">
-      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+      {/* Toolbar */}
       <header className="toolbar">
-        <div className="toolbar-brand">
+        <div className="toolbar-brand" style={{ cursor: 'pointer' }} onClick={() => setAppPage('landing')}>
           <span className="toolbar-logo">&#9632;</span>
           <span className="toolbar-name">FormCraft</span>
-          <span className="toolbar-badge">Phase 1</span>
+          <span className="toolbar-badge">Beta</span>
         </div>
 
         <div className="toolbar-center">
-          {/* Mode toggle */}
           <div className="mode-toggle">
-            <button className={`mode-btn${mode === 'edit' ? ' active' : ''}`} onClick={() => setMode('edit')}>
+            <button className={`mode-btn${editMode === 'edit' ? ' active' : ''}`} onClick={() => setEditMode('edit')}>
               Edit
             </button>
-            <button className={`mode-btn${mode === 'preview' ? ' active' : ''}`} onClick={() => setMode('preview')}>
+            <button className={`mode-btn${editMode === 'preview' ? ' active' : ''}`} onClick={() => setEditMode('preview')}>
               Preview
             </button>
           </div>
 
-          {/* Undo / redo */}
-          {mode === 'edit' && (
+          {editMode === 'edit' && (
             <div className="history-btns">
               <button className="hist-btn" onClick={undo} disabled={!past.length} title="Undo (Ctrl+Z)">
                 <UndoIcon />
@@ -68,8 +109,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Delete selected */}
-          {mode === 'edit' && selectedId && (
+          {editMode === 'edit' && selectedId && (
             <button className="del-btn" onClick={deleteSelected} title="Delete selected (Delete)">
               <TrashIcon /> Delete
             </button>
@@ -77,6 +117,9 @@ export default function App() {
         </div>
 
         <div className="toolbar-actions">
+          <button className="btn-new" onClick={() => setAppPage('wizard')} title="New document">
+            + New
+          </button>
           {error && <span className="toolbar-error">{error}</span>}
           <button className="btn-download" onClick={handleDownload} disabled={generating}>
             {generating ? 'Generating…' : <><DownloadIcon /> Download PDF</>}
@@ -84,15 +127,13 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Workspace ────────────────────────────────────────────────────── */}
+      {/* Workspace */}
       <div className="workspace">
-        {/* Left panel: element picker (edit mode only) */}
-        {mode === 'edit' && <AddElementPanel />}
+        {editMode === 'edit' && <PalettePanel />}
 
-        {/* Canvas area */}
         <main className="canvas-scroll">
           <div className="canvas-wrapper">
-            {mode === 'edit' ? (
+            {editMode === 'edit' ? (
               <EditorCanvas />
             ) : (
               <DomCanvas schema={schema} editable={true} />
@@ -100,8 +141,7 @@ export default function App() {
           </div>
         </main>
 
-        {/* Right panel: properties (edit mode only) */}
-        {mode === 'edit' && <PropertiesPanel />}
+        {editMode === 'edit' && <PropertiesPanel />}
       </div>
     </div>
   );

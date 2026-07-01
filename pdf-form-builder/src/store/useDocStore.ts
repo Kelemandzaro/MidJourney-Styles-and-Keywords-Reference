@@ -31,7 +31,11 @@ interface DocStore {
   commitUpdate: (id: string, patch: Partial<DocElement>, before?: DocumentSchema) => void;
 
   addElement: (el: DocElement) => void;
+  addElements: (els: DocElement[]) => void;
   deleteSelected: () => void;
+
+  // Replace entire schema (e.g. from wizard)
+  setSchema: (schema: DocumentSchema) => void;
 
   undo: () => void;
   redo: () => void;
@@ -72,6 +76,25 @@ export const useDocStore = create<DocStore>((set, get) => ({
       past: [...past.slice(-(MAX_HISTORY - 1)), schema],
       future: [],
     });
+  },
+
+  addElements: (els) => {
+    const { schema, past } = get();
+    set({
+      schema: {
+        ...schema,
+        pages: schema.pages.map((p, i) =>
+          i === 0 ? { ...p, elements: [...p.elements, ...els] } : p,
+        ),
+      },
+      selectedId: els[els.length - 1]?.id ?? null,
+      past: [...past.slice(-(MAX_HISTORY - 1)), schema],
+      future: [],
+    });
+  },
+
+  setSchema: (schema) => {
+    set({ schema, selectedId: null, past: [], future: [] });
   },
 
   deleteSelected: () => {

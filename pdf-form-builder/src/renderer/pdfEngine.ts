@@ -1,6 +1,6 @@
 import { PDFDocument, PDFName, rgb, PDFFont } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
-import type { DocumentSchema, DocElement, FieldElement, FontRef } from '../schema/types';
+import type { DocumentSchema, DocElement, FieldElement, ImageElement, FontRef } from '../schema/types';
 import { toPdfY, hexToRgb, svgRoundedRect } from './utils';
 
 // Vite resolves these to hashed asset URLs at build time.
@@ -250,5 +250,27 @@ function renderStaticElement(
       // Queue the transparent widget for the interactive layer pass.
       fieldQueue.push(el);
       break;
+
+    case 'image':
+      drawImagePlaceholder(page, el, pageH);
+      break;
   }
+}
+
+function drawImagePlaceholder(page: ReturnType<PDFDocument['addPage']>, el: ImageElement, pageH: number) {
+  const pdfY = toPdfY(el.y, el.h, pageH);
+  page.drawSvgPath(svgRoundedRect(el.w, el.h, 4), {
+    x: el.x,
+    y: pageH - el.y,
+    borderColor: rgb(0.66, 0.72, 0.91),
+    borderWidth: 1,
+    color: rgb(0.94, 0.96, 1),
+  });
+  // "LOGO" label
+  page.drawText(el.label ?? 'IMAGE', {
+    x: el.x + el.w / 2 - 12,
+    y: pdfY + el.h / 2 - 4,
+    size: 8,
+    color: rgb(0.66, 0.72, 0.91),
+  });
 }

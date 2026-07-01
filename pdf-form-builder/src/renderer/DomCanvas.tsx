@@ -6,6 +6,7 @@ import type {
   TextElement,
   LineElement,
   FieldElement,
+  ImageElement,
 } from '../schema/types';
 import { ptToPx } from './utils';
 
@@ -143,6 +144,39 @@ function FieldEl({ el, editable }: { el: FieldElement; editable: boolean }) {
   );
 }
 
+function ImageEl({ el }: { el: ImageElement }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: ptToPx(el.x),
+        top: ptToPx(el.y),
+        width: ptToPx(el.w),
+        height: ptToPx(el.h),
+        border: '2px dashed #A8B8E8',
+        borderRadius: 4,
+        background: '#F0F4FF',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        userSelect: 'none',
+        boxSizing: 'border-box',
+      }}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A8B8E8" strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+      <span style={{ fontSize: 9, color: '#A8B8E8', fontFamily: 'Inter, sans-serif', fontWeight: 600, letterSpacing: 0.5 }}>
+        {el.label ?? 'IMAGE'}
+      </span>
+    </div>
+  );
+}
+
 // ── Canvas ───────────────────────────────────────────────────────────────────
 
 export default function DomCanvas({ schema, editable = true }: Props) {
@@ -175,6 +209,8 @@ function renderElement(el: DocElement, editable: boolean): React.ReactNode {
       return <LineEl key={el.id} el={el} />;
     case 'field':
       return <FieldEl key={el.id} el={el} editable={editable} />;
+    case 'image':
+      return <ImageEl key={el.id} el={el} />;
     default:
       return null;
   }
