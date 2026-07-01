@@ -195,6 +195,17 @@ function FieldProps({ el, commit }: { el: Extract<DocElement, { type: 'field' }>
       <Row label="">
         <CheckboxInput value={el.required ?? false} label="Required" onChange={v => commit({ required: v })} />
       </Row>
+      {el.fieldType === 'dropdown' && (
+        <Row label="Options">
+          <textarea
+            className="prop-textarea"
+            value={(el.options ?? []).join('\n')}
+            placeholder="One option per line"
+            onChange={e => commit({ options: e.target.value.split('\n') })}
+            onBlur={e => commit({ options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+          />
+        </Row>
+      )}
       <Divider />
       <SectionTitle>Box Style</SectionTitle>
       <Row label="Fill"><ColorInput value={el.boxStyle.fill} onChange={v => commit({ boxStyle: { ...el.boxStyle, fill: v } })} /></Row>
@@ -204,6 +215,17 @@ function FieldProps({ el, commit }: { el: Extract<DocElement, { type: 'field' }>
       <SectionTitle>Widget Style</SectionTitle>
       <Row label="Font size"><NumInput value={el.widgetStyle.size} onChange={v => commit({ widgetStyle: { ...el.widgetStyle, size: v } })} /></Row>
       <Row label="Color"><ColorInput value={el.widgetStyle.color} onChange={v => commit({ widgetStyle: { ...el.widgetStyle, color: v } })} /></Row>
+      <Row label="Align">
+        <SelectInput
+          value={el.widgetStyle.align ?? 'left'}
+          options={[
+            { value: 'left', label: 'Left' },
+            { value: 'center', label: 'Center' },
+            { value: 'right', label: 'Right' },
+          ]}
+          onChange={v => commit({ widgetStyle: { ...el.widgetStyle, align: v as TextAlign } })}
+        />
+      </Row>
       <Row label="Padding"><NumInput value={el.widgetStyle.padding ?? 8} onChange={v => commit({ widgetStyle: { ...el.widgetStyle, padding: v } })} /></Row>
     </>
   );

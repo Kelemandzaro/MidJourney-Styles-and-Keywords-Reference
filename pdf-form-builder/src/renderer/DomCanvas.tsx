@@ -51,7 +51,6 @@ function TextEl({ el }: { el: TextElement }) {
         fontFamily,
         fontWeight: el.weight === 'bold' ? 700 : 400,
         color: el.color,
-        textAlign: el.align ?? 'left',
         display: 'flex',
         alignItems: 'center',
         lineHeight: 1.2,
@@ -59,11 +58,10 @@ function TextEl({ el }: { el: TextElement }) {
         userSelect: 'none',
       }}
     >
-      {el.align === 'center' ? (
-        <span style={{ width: '100%', textAlign: 'center' }}>{el.content}</span>
-      ) : (
-        el.content
-      )}
+      {/* Full-width span so textAlign applies; pre-wrap so \n renders like the PDF */}
+      <span style={{ width: '100%', textAlign: el.align ?? 'left', whiteSpace: 'pre-wrap' }}>
+        {el.content}
+      </span>
     </div>
   );
 }
@@ -110,7 +108,7 @@ function FieldEl({ el, editable }: { el: FieldElement; editable: boolean }) {
     overflow: 'hidden',
   };
 
-  const inputStyle: React.CSSProperties = {
+  const widgetStyle: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
     padding: `0 ${pad}px`,
@@ -128,16 +126,74 @@ function FieldEl({ el, editable }: { el: FieldElement; editable: boolean }) {
     pointerEvents: editable ? 'auto' : 'none',
   };
 
+  // Checkbox — the styled box IS the control; center a native checkbox in it.
+  if (el.fieldType === 'checkbox') {
+    return (
+      <div style={{ ...boxStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: editable ? 'pointer' : 'default' }}>
+        <input
+          type="checkbox"
+          name={el.name}
+          disabled={!editable}
+          aria-label={el.label ?? el.name}
+          style={{
+            width: '72%',
+            height: '72%',
+            margin: 0,
+            accentColor: el.widgetStyle.color,
+            cursor: editable ? 'pointer' : 'default',
+            pointerEvents: editable ? 'auto' : 'none',
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Dropdown — native select, chrome stripped so the styled box shows through.
+  if (el.fieldType === 'dropdown') {
+    return (
+      <div style={boxStyle}>
+        <select
+          name={el.name}
+          required={el.required}
+          defaultValue=""
+          aria-label={el.label ?? el.name}
+          style={{ ...widgetStyle, appearance: 'none', WebkitAppearance: 'none', cursor: editable ? 'pointer' : 'default' }}
+        >
+          <option value="" disabled>{el.placeholder || 'Choose…'}</option>
+          {(el.options ?? []).map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  // Textarea — multiline, top-aligned like a multiline AcroForm field.
+  if (el.fieldType === 'textarea') {
+    return (
+      <div style={boxStyle}>
+        <textarea
+          placeholder={el.placeholder}
+          name={el.name}
+          required={el.required}
+          readOnly={!editable}
+          aria-label={el.label ?? el.name}
+          style={{ ...widgetStyle, padding: pad, resize: 'none', lineHeight: 1.2 }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={boxStyle} onClick={() => editable && inputRef.current?.focus()}>
       <input
         ref={inputRef}
-        type={el.fieldType === 'date' ? 'text' : 'text'}
+        type="text"
         placeholder={el.placeholder}
         name={el.name}
         required={el.required}
         readOnly={!editable}
-        style={inputStyle}
+        style={widgetStyle}
         aria-label={el.label ?? el.name}
       />
     </div>
